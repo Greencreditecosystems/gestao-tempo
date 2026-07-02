@@ -1,0 +1,2006 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>GCP — Gestão por Ciclos de Prioridade</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GCP">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <meta name="theme-color" content="#0F0F0F">
+
+    <style>
+        :root {
+            --pessoal: #4ECDC4;
+            --familia: #FF6B6B;
+            --profissional: #45B7D1;
+            --bg: #0F0F0F;
+            --card: #1A1A1A;
+            --card2: #222;
+            --text: #E0E0E0;
+            --muted: #888;
+            --border: #2A2A2A;
+            --gold: #FFD93D;
+            --danger: #FF4757;
+            --success: #2ED573;
+            --banner-bg: #1a1a1a;
+            --modal-bg: #1A1A1A;
+        }
+
+        body.light-mode {
+            --bg: #F5F5F5;
+            --card: #FFFFFF;
+            --card2: #F0F0F0;
+            --text: #1A1A1A;
+            --muted: #666;
+            --border: #E0E0E0;
+            --banner-bg: #FFF3CD;
+            --modal-bg: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 12px;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            font-size: 14px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* HEADER */
+        .header {
+            text-align: center;
+            padding: 8px 0 6px 0;
+            margin-bottom: 6px;
+        }
+        .header-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2px;
+        }
+        .header h1 {
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--pessoal), var(--profissional), var(--familia));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+        }
+        .header .date {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        /* Tema toggle */
+        .theme-toggle {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            color: var(--text);
+        }
+        .theme-toggle:active { transform: scale(0.9); }
+
+        /* Frase motivacional */
+        .frase-dia {
+            font-size: 10px;
+            color: var(--muted);
+            font-style: italic;
+            margin-top: 4px;
+            letter-spacing: 0.2px;
+        }
+
+        /* Streak */
+        .streak-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            background: rgba(255, 107, 107, 0.15);
+            color: var(--familia);
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+
+        /* Banner próximo bloco */
+        .banner-proximo {
+            background: var(--banner-bg);
+            border: 1px solid var(--gold);
+            border-radius: 10px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            animation: pulse 2s infinite;
+        }
+        .banner-proximo.show { display: flex; }
+        @keyframes pulse {
+            0%,
+            100% {
+                border-color: var(--gold);
+            }
+            50% {
+                border-color: var(--pessoal);
+            }
+        }
+        .banner-proximo .banner-tempo {
+            background: var(--gold);
+            color: #000;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        /* PILLS */
+        .pill-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .pill {
+            flex: 1;
+            background: var(--card);
+            border-radius: 10px;
+            padding: 8px 4px;
+            text-align: center;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pill.pessoal { border-color: var(--pessoal); }
+        .pill.familia { border-color: var(--familia); }
+        .pill.profissional { border-color: var(--profissional); }
+        .pill .pill-emoji { font-size: 20px; }
+        .pill .pill-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            margin-top: 1px;
+        }
+        .pill .pill-count { font-size: 22px; font-weight: 900; }
+        .pill.pessoal .pill-count { color: var(--pessoal); }
+        .pill.familia .pill-count { color: var(--familia); }
+        .pill.profissional .pill-count { color: var(--profissional); }
+
+        /* TABS PRINCIPAIS */
+        .main-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+            background: var(--card);
+            border-radius: 12px;
+            padding: 4px;
+        }
+        .main-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            letter-spacing: -0.3px;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .main-tab.active { background: var(--border); color: #fff; }
+
+        /* SELETOR DE DIA */
+        .day-selector {
+            display: flex;
+            gap: 3px;
+            margin-bottom: 12px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .day-selector::-webkit-scrollbar { height: 0; }
+        .day-chip {
+            min-width: 42px;
+            padding: 8px 6px;
+            text-align: center;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            background: var(--card);
+            color: var(--muted);
+            border: 1px solid var(--border);
+            transition: all 0.15s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .day-chip.active { background: #fff; color: #000; border-color: #fff; }
+        .day-chip.hoje { border-color: var(--gold); color: var(--gold); }
+        .day-chip.hoje.active { background: var(--gold); color: #000; border-color: var(--gold); }
+
+        /* MÉTRICAS MINI */
+        .metricas-mini {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .metrica-card {
+            flex: 1;
+            background: var(--card);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+        }
+        .metrica-valor { font-size: 22px; font-weight: 900; }
+        .metrica-valor.green { color: var(--pessoal); }
+        .metrica-valor.red { color: var(--familia); }
+        .metrica-valor.gold { color: var(--gold); }
+        .metrica-label {
+            font-size: 9px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 1px;
+        }
+
+        /* SEÇÃO DE BLOCOS */
+        .section-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: space-between;
+        }
+        .section-title-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .section-title-left::after {
+            content: '';
+            width: 40px;
+            height: 1px;
+            background: var(--border);
+        }
+        .block-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+        .block {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+        }
+        .block:active { transform: scale(0.985); }
+        .block.pessoal { border-left-color: var(--pessoal); }
+        .block.familia { border-left-color: var(--familia); }
+        .block.profissional { border-left-color: var(--profissional); }
+        .block.fixo { background: var(--card2); border-left-width: 4px; }
+        .block.done { opacity: 0.4; }
+        .block.done .block-title {
+            text-decoration: line-through;
+            text-decoration-color: var(--muted);
+        }
+        .block .block-time {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--muted);
+            min-width: 62px;
+            letter-spacing: -0.3px;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .block .block-info { flex: 1; min-width: 0; }
+        .block .block-title { font-size: 13px; font-weight: 600; line-height: 1.3; }
+        .block .block-pilar-tag {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            display: inline-block;
+            padding: 1px 5px;
+            border-radius: 3px;
+            margin-top: 2px;
+        }
+        .block.pessoal .block-pilar-tag { background: rgba(78, 205, 196, 0.2); color: var(--pessoal); }
+        .block.familia .block-pilar-tag { background: rgba(255, 107, 107, 0.2); color: var(--familia); }
+        .block.profissional .block-pilar-tag { background: rgba(69, 183, 209, 0.2); color: var(--profissional); }
+        .checkbox {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 12px;
+            transition: all 0.2s;
+            font-weight: 900;
+        }
+        .block.done .checkbox { background: var(--gold); border-color: var(--gold); color: #000; }
+
+        /* BOTÕES */
+        .btn {
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-gold { background: var(--gold); color: #000; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-sm { padding: 6px 10px; font-size: 10px; border-radius: 7px; }
+        .btn-xs { padding: 3px 8px; font-size: 9px; border-radius: 5px; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-success { background: var(--success); color: #000; }
+        .btn-icon { width: 32px; height: 32px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+
+        /* BALDE */
+        .balde-section {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 14px;
+            border: 2px dashed var(--border);
+        }
+        .balde-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .balde-title {
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .balde-count {
+            background: var(--gold);
+            color: #000;
+            font-size: 10px;
+            font-weight: 900;
+            padding: 1px 7px;
+            border-radius: 8px;
+        }
+        .balde-input-row { display: flex; gap: 6px; }
+        .balde-input {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+            font-family: inherit;
+        }
+        .balde-input:focus { border-color: var(--gold); }
+        .balde-input::placeholder { color: #555; }
+        .balde-items {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 8px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .balde-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 9px;
+            background: var(--bg);
+            border-radius: 7px;
+            font-size: 11px;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .balde-item:hover { background: var(--border); }
+        .balde-item:active { transform: scale(0.98); }
+        .balde-item-text { flex: 1; min-width: 0; word-break: break-word; }
+        .balde-item-del {
+            color: var(--danger);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 0 3px;
+            flex-shrink: 0;
+        }
+        .balde-dica {
+            font-size: 9px;
+            color: var(--muted);
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        /* CHECK-IN */
+        .checkin-section {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 14px;
+        }
+        .checkin-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        .checkin-row label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            min-width: 100px;
+            padding-top: 8px;
+        }
+        .checkin-row input,
+        .checkin-row textarea {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 9px;
+            color: var(--text);
+            font-size: 12px;
+            outline: none;
+            font-family: inherit;
+            resize: vertical;
+            min-width: 150px;
+        }
+        .checkin-row input:focus,
+        .checkin-row textarea:focus { border-color: var(--gold); }
+        .nps-buttons { display: flex; gap: 2px; flex-wrap: wrap; }
+        .nps-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            font-weight: 700;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .nps-btn.selected { border-color: var(--gold); background: var(--gold); color: #000; }
+
+        /* ============================================================
+           VISÃO SEMANAL — HORIZONTAL COMPACTA
+           ============================================================ */
+        .semana-navegacao {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 8px;
+        }
+        .semana-nav-btn {
+            padding: 7px 10px;
+            font-size: 10px;
+            font-weight: 700;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--card);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .semana-nav-btn:active { background: var(--border); transform: scale(0.95); }
+        .semana-nav-range {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .calendario-horizontal {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+        .cal-header {
+            display: grid;
+            grid-template-columns: 34px repeat(7, 1fr);
+            border-bottom: 1px solid var(--border);
+            background: var(--card2);
+        }
+        .cal-header .cal-spacer { border-right: 1px solid var(--border); }
+        .cal-header .cal-day-header {
+            text-align: center;
+            padding: 5px 1px;
+            border-right: 1px solid var(--border);
+        }
+        .cal-header .cal-day-header:last-child { border-right: none; }
+        .cal-header .cal-day-nome {
+            font-size: 8px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .cal-header .cal-day-num {
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 1px;
+        }
+        .cal-header .cal-day-header.hoje .cal-day-num {
+            background: var(--gold);
+            color: #000;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+        }
+        .cal-header .cal-day-header.hoje .cal-day-nome { color: var(--gold); }
+
+        .cal-body-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .cal-body-scroll::-webkit-scrollbar { height: 2px; }
+        .cal-body-scroll::-webkit-scrollbar-track { background: var(--bg); }
+        .cal-body-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .cal-body {
+            display: grid;
+            grid-template-columns: 34px repeat(7, 1fr);
+            position: relative;
+            min-width: 480px;
+        }
+        .cal-time-col { border-right: 1px solid var(--border); }
+        .cal-time-slot {
+            height: 32px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 1px;
+            font-size: 7px;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+        }
+        .cal-day-col {
+            position: relative;
+            border-right: 1px solid var(--border);
+        }
+        .cal-day-col:last-child { border-right: none; }
+        .cal-day-col.hoje { background: rgba(255, 217, 61, 0.04); }
+        .cal-hour-cell {
+            height: 32px;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .cal-evento {
+            position: absolute;
+            left: 2px;
+            right: 2px;
+            border-radius: 4px;
+            padding: 2px 3px;
+            font-size: 7px;
+            overflow: hidden;
+            cursor: pointer;
+            z-index: 2;
+            line-height: 1.2;
+        }
+        .cal-evento.pessoal { background: var(--pessoal); color: #000; }
+        .cal-evento.familia { background: var(--familia); color: #fff; }
+        .cal-evento.profissional { background: var(--profissional); color: #000; }
+        .cal-evento .evt-titulo { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cal-evento .evt-hora { font-size: 6px; opacity: 0.7; }
+
+        .cal-linha-agora {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #e74c3c;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .cal-linha-agora::before {
+            content: '';
+            position: absolute;
+            left: -4px;
+            top: -3px;
+            width: 8px;
+            height: 8px;
+            background: #e74c3c;
+            border-radius: 50%;
+        }
+
+        .cal-footer {
+            display: grid;
+            grid-template-columns: 34px repeat(7, 1fr);
+            border-top: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.1);
+        }
+        .cal-footer .cal-footer-spacer { border-right: 1px solid var(--border); padding: 6px; }
+        .cal-footer .cal-footer-stat {
+            text-align: center;
+            padding: 5px 1px;
+            border-right: 1px solid var(--border);
+            font-size: 8px;
+            color: var(--muted);
+        }
+        .cal-footer .cal-footer-stat:last-child { border-right: none; }
+        .cal-footer .cal-footer-stat .pct { font-weight: 700; color: var(--success); }
+        .cal-footer .cal-footer-stat.hoje .pct { color: var(--gold); }
+        /* Borda colorida por % */
+        .cal-footer-stat.borda-verde { border-top: 2px solid var(--success); }
+        .cal-footer-stat.borda-amarela { border-top: 2px solid var(--gold); }
+        .cal-footer-stat.borda-vermelha { border-top: 2px solid var(--danger); }
+
+        .cal-legenda {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            padding: 6px 8px;
+            font-size: 9px;
+            color: var(--muted);
+            justify-content: center;
+        }
+        .cal-legenda span { display: flex; align-items: center; gap: 4px; }
+        .cal-legenda .bolinha {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+        .cal-legenda .bolinha.pessoal { background: var(--pessoal); }
+        .cal-legenda .bolinha.familia { background: var(--familia); }
+        .cal-legenda .bolinha.profissional { background: var(--profissional); }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--modal-bg);
+            border-radius: 14px;
+            padding: 18px;
+            width: 92%;
+            max-width: 460px;
+            max-height: 85vh;
+            overflow-y: auto;
+            color: var(--text);
+        }
+        .modal h3 { font-size: 15px; margin-bottom: 12px; }
+        .modal input,
+        .modal textarea,
+        .modal select {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 10px;
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+            font-family: inherit;
+            margin-bottom: 8px;
+            resize: vertical;
+        }
+        .modal select { appearance: none; -webkit-appearance: none; }
+        .modal textarea:focus,
+        .modal input:focus,
+        .modal select:focus { border-color: var(--gold); }
+        .modal-buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px; flex-wrap: wrap; }
+        .modal-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
+        }
+        .modal-row { display: flex; gap: 8px; }
+        .modal-row > div { flex: 1; }
+
+        /* Resumo export */
+        .resumo-box {
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 14px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+        }
+
+        /* Histórico check-ins */
+        .historico-item {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 11px;
+        }
+        .historico-item .nps-badge {
+            display: inline-block;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 22px;
+            font-weight: 700;
+            font-size: 10px;
+            margin-right: 6px;
+        }
+        .nps-alto { background: var(--success); color: #000; }
+        .nps-medio { background: var(--gold); color: #000; }
+        .nps-baixo { background: var(--danger); color: #fff; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gold);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 12px;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+
+        /* FOOTER */
+        .footer {
+            text-align: center;
+            padding: 12px 0;
+            font-size: 9px;
+            color: var(--muted);
+            letter-spacing: 0.5px;
+        }
+
+        /* Util */
+        .hidden { display: none !important; }
+        .tag-fixo {
+            font-size: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 1px 5px;
+            border-radius: 3px;
+            color: var(--muted);
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            margin-left: 4px;
+        }
+        body.light-mode .tag-fixo { background: rgba(0, 0, 0, 0.06); }
+
+        /* Responsivo para manter tudo visível */
+        @media (max-width: 380px) {
+            .pill .pill-count { font-size: 18px; }
+            .metrica-valor { font-size: 18px; }
+            .block .block-time { min-width: 52px; font-size: 9px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast notifications -->
+    <div class="toast" id="toast"></div>
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-top-row">
+            <div style="display:flex;align-items:center;">
+                <h1>⚡ GCP</h1>
+                <span class="streak-badge" id="streakBadge" title="Dias consecutivos ≥80%">🔥 0</span>
+            </div>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema claro/escuro" id="themeBtn">🌙</button>
+        </div>
+        <div class="date" id="currentDate"></div>
+        <div class="frase-dia" id="fraseDia"></div>
+    </div>
+
+    <!-- Banner próximo bloco -->
+    <div class="banner-proximo" id="bannerProximo">
+        ⏰ Próximo bloco em <span class="banner-tempo" id="bannerTempo">--</span>: <span id="bannerTitulo">--</span>
+    </div>
+
+    <!-- PILLS -->
+    <div class="pill-row">
+        <div class="pill pessoal">
+            <div class="pill-emoji">🧑</div>
+            <div class="pill-label">Pessoal</div>
+            <div class="pill-count" id="count-pessoal">0</div>
+        </div>
+        <div class="pill familia">
+            <div class="pill-emoji">👨‍👩‍👧‍👦</div>
+            <div class="pill-label">Família</div>
+            <div class="pill-count" id="count-familia">0</div>
+        </div>
+        <div class="pill profisional">
+            <div class="pill-emoji">💼</div>
+            <div class="pill-label">Profissional</div>
+            <div class="pill-count" id="count-profissional">0</div>
+        </div>
+    </div>
+
+    <!-- TABS PRINCIPAIS -->
+    <div class="main-tabs">
+        <button class="main-tab active" data-view="diario" onclick="switchView('diario')">📅 Diário</button>
+        <button class="main-tab" data-view="semanal" onclick="switchView('semanal')">🗓️ Semanal</button>
+        <button class="main-tab" data-view="historico" onclick="switchView('historico')">📈 Histórico</button>
+    </div>
+
+    <!-- VISÃO DIÁRIA -->
+    <div id="viewDiario">
+        <div class="day-selector" id="daySelector"></div>
+        <div class="metricas-mini">
+            <div class="metrica-card">
+                <div class="metrica-valor green" id="metrica-blocks">0%</div>
+                <div class="metrica-label">Concluído</div>
+            </div>
+            <div class="metrica-card">
+                <div class="metrica-valor red" id="metrica-pendentes">0</div>
+                <div class="metrica-label">Pendentes</div>
+            </div>
+            <div class="metrica-card">
+                <div class="metrica-valor gold" id="metrica-total">0</div>
+                <div class="metrica-label">Total Blocos</div>
+            </div>
+        </div>
+        <div class="section-title">
+            <div class="section-title-left">🔒 ROTINA FIXA</div>
+            <button class="btn btn-xs btn-outline" onclick="abrirModalRotina()">Editar</button>
+        </div>
+        <div class="block-list" id="blockListFixos"></div>
+        <div class="section-title">
+            <div class="section-title-left">📝 BLOCOS DO DIA</div>
+            <div style="display:flex;gap:6px;">
+                <button class="btn btn-xs btn-outline" onclick="exportarCheckin()" title="Exportar resumo">📋</button>
+                <button class="btn btn-xs btn-gold" onclick="abrirModalBloco()">+ Bloco</button>
+            </div>
+        </div>
+        <div class="block-list" id="blockListExtras"></div>
+        <div class="balde-section">
+            <div class="balde-header">
+                <div class="balde-title">🪣 Balde <span class="balde-count" id="baldeCount">0</span></div>
+                <button class="btn btn-xs btn-outline" onclick="limparBalde()">Limpar</button>
+            </div>
+            <div class="balde-input-row">
+                <input type="text" class="balde-input" id="baldeInput" placeholder="Jogar demanda aqui..." onkeydown="if(event.key==='Enter')addBalde()">
+                <button class="btn btn-sm btn-gold" onclick="addBalde()">+</button>
+            </div>
+            <div class="balde-items" id="baldeItems"></div>
+            <div class="balde-dica">💡 Toque no item para transformá-lo em bloco agendado</div>
+        </div>
+        <div class="checkin-section">
+            <div class="section-title">
+                <div class="section-title-left">🌙 CHECK-IN</div>
+            </div>
+            <div class="checkin-row">
+                <label>Importou hoje:</label>
+                <textarea id="checkinImportou" rows="2" placeholder="O que fiz que realmente importa..."></textarea>
+            </div>
+            <div class="checkin-row">
+                <label>Ficou p/ amanhã:</label>
+                <textarea id="checkinFicou" rows="2" placeholder="O que não fiz e preciso fazer..."></textarea>
+            </div>
+            <div class="checkin-row">
+                <label>Nota (0-10):</label>
+                <div class="nps-buttons" id="npsButtons"></div>
+                <input type="hidden" id="npsValue" value="">
+            </div>
+            <button class="btn btn-gold" style="width:100%;margin-top:4px;" onclick="salvarCheckin()">💾 Salvar Check-in</button>
+        </div>
+        <!-- Backup -->
+        <div style="display:flex;gap:6px;margin-bottom:14px;">
+            <button class="btn btn-sm btn-outline" onclick="exportarDados()" style="flex:1;">📤 Exportar Dados</button>
+            <button class="btn btn-sm btn-outline" onclick="document.getElementById('importFile').click()" style="flex:1;">📥 Importar Dados</button>
+            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importarDados(event)">
+        </div>
+    </div>
+
+    <!-- VISÃO SEMANAL -->
+    <div id="viewSemanal" class="hidden">
+        <div class="semana-navegacao">
+            <button class="semana-nav-btn" onclick="navegarSemana(-1)">← Anterior</button>
+            <span class="semana-nav-range" id="semanaRange">—</span>
+            <button class="semana-nav-btn" onclick="navegarSemana(1)">Próxima →</button>
+        </div>
+        <div class="calendario-horizontal">
+            <div class="cal-header" id="calHeader"></div>
+            <div class="cal-body-scroll">
+                <div class="cal-body" id="calBody"></div>
+            </div>
+            <div class="cal-footer" id="calFooter"></div>
+        </div>
+        <div class="cal-legenda">
+            <span><span class="bolinha pessoal"></span> Pessoal</span>
+            <span><span class="bolinha familia"></span> Família</span>
+            <span><span class="bolinha profissional"></span> Profissional</span>
+        </div>
+    </div>
+
+    <!-- VISÃO HISTÓRICO -->
+    <div id="viewHistorico" class="hidden">
+        <div class="section-title">
+            <div class="section-title-left">📈 HISTÓRICO DE CHECK-INS</div>
+            <span style="font-size:10px;color:var(--muted);" id="historicoRange">últimos 30 dias</span>
+        </div>
+        <div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:14px;">
+            <div style="display:flex;gap:12px;margin-bottom:14px;text-align:center;">
+                <div style="flex:1;">
+                    <div style="font-size:24px;font-weight:900;color:var(--gold);" id="histMediaNPS">-</div>
+                    <div style="font-size:9px;color:var(--muted);">Média NPS</div>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-size:24px;font-weight:900;color:var(--pessoal);" id="histTotal">0</div>
+                    <div style="font-size:9px;color:var(--muted);">Check-ins</div>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-size:24px;font-weight:900;color:var(--familia);" id="histStreak">0</div>
+                    <div style="font-size:9px;color:var(--muted);">🔥 Streak</div>
+                </div>
+            </div>
+            <div id="historicoLista"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: NOVO/EDITAR BLOCO EXTRA -->
+    <div class="modal-overlay" id="modalBloco">
+        <div class="modal">
+            <h3 id="modalBlocoTitulo">➕ Novo Bloco</h3>
+            <div class="modal-label">Título</div>
+            <input type="text" id="blocoTitulo" placeholder="Ex: Reunião Green Credit">
+            <div class="modal-row">
+                <div>
+                    <div class="modal-label">Início</div>
+                    <input type="time" id="blocoInicio" value="08:00">
+                </div>
+                <div>
+                    <div class="modal-label">Fim</div>
+                    <input type="time" id="blocoFim" value="09:00">
+                </div>
+            </div>
+            <div class="modal-label">Pilar</div>
+            <select id="blocoPilar">
+                <option value="pessoal">🧑 Pessoal</option>
+                <option value="familia">👨‍👩‍👧‍👦 Família</option>
+                <option value="profissional">💼 Profissional</option>
+            </select>
+            <input type="hidden" id="blocoEditIndex" value="-1">
+            <div class="modal-buttons">
+                <button class="btn btn-outline" onclick="fecharModalBloco()">Cancelar</button>
+                <button class="btn btn-gold" onclick="addOuEditarBloco()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: EDITAR ROTINA -->
+    <div class="modal-overlay" id="modalRotina">
+        <div class="modal">
+            <h3>🔒 Editar Rotina — <span id="modalRotinaDia"></span></h3>
+            <div id="modalRotinaList" style="max-height:300px;overflow-y:auto;margin-bottom:10px;"></div>
+            <div style="border-top:1px solid var(--border);padding-top:8px;margin-bottom:8px;">
+                <div class="modal-label">Adicionar à rotina</div>
+                <input type="text" id="rotinaTitulo" placeholder="Título do bloco">
+                <div class="modal-row">
+                    <div><input type="time" id="rotinaInicio" value="08:00"></div>
+                    <div><input type="time" id="rotinaFim" value="09:00"></div>
+                </div>
+                <select id="rotinaPilar">
+                    <option value="pessoal">🧑 Pessoal</option>
+                    <option value="familia">👨‍👩‍👧‍👦 Família</option>
+                    <option value="profissional">💼 Profissional</option>
+                </select>
+                <button class="btn btn-sm btn-gold" style="width:100%;" onclick="addRotinaItem()">Adicionar à Rotina</button>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-outline" onclick="fecharModalRotina()">Fechar</button>
+                <button class="btn btn-danger btn-sm" onclick="resetarRotinaDia()">Resetar Padrão</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: EXPORTAR RESUMO -->
+    <div class="modal-overlay" id="modalResumo">
+        <div class="modal">
+            <h3>📋 Resumo do Dia</h3>
+            <div class="resumo-box" id="resumoConteudo"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-outline" onclick="fecharModalResumo()">Fechar</button>
+                <button class="btn btn-gold" onclick="copiarResumo()">📋 Copiar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">Método GCP · Ciclos de Prioridade · v3.0</div>
+
+    <script>
+        // ========== FRASES MOTIVACIONAIS ==========
+        const FRASES = [
+            '"Você não precisa ser ótimo para começar, mas precisa começar para ser ótimo." — Zig Ziglar',
+            '"Disciplina é a ponte entre metas e realizações." — Jim Rohn',
+            '"O que não é agendado, não é feito." — Robin Sharma',
+            '"Pequenas ações diárias geram resultados extraordinários." — James Clear',
+            '"Não espere por inspiração. Comece e a inspiração virá." — Steven Pressfield',
+            '"Foco não é dizer sim para o que importa. É dizer não para o que não importa." — Steve Jobs',
+            '"Você é o CEO da sua própria vida. Lídere com intenção." — Anônimo',
+            '"Enquanto você espera o momento perfeito, a vida acontece." — Sêneca',
+            '"Gestão do tempo é gestão da atenção. Cuide do que você cultiva." — Cal Newport',
+            '"90% do sucesso é simplesmente não desistir." — Woody Allen',
+            '"A diferença entre o sonho e a realização é um cronograma." — Napoleon Hill',
+            '"Sorte é o que acontece quando a preparação encontra a oportunidade." — Sêneca',
+        ];
+
+        // ========== ROTINA PADRÃO ==========
+        const ROTINA_PADRAO = {
+            'seg': [
+                { inicio: '04:45', fim: '05:00', titulo: 'Despertar', pilar: 'pessoal' },
+                { inicio: '05:00', fim: '06:15', titulo: 'Academia', pilar: 'pessoal' },
+                { inicio: '06:15', fim: '06:30', titulo: 'Café da manhã', pilar: 'pessoal' },
+                { inicio: '06:30', fim: '07:00', titulo: 'Passeio Duke 🐕', pilar: 'pessoal' },
+                { inicio: '07:25', fim: '12:00', titulo: 'Trabalho (Manhã)', pilar: 'profissional' },
+                { inicio: '12:00', fim: '13:00', titulo: 'Almoço', pilar: 'pessoal' },
+                { inicio: '13:00', fim: '17:00', titulo: 'Trabalho (Tarde)', pilar: 'profissional' },
+                { inicio: '17:00', fim: '18:00', titulo: 'Volta / Chegada em casa', pilar: 'pessoal' },
+                { inicio: '18:00', fim: '18:30', titulo: 'Rotina Família', pilar: 'familia' },
+                { inicio: '18:30', fim: '21:30', titulo: '📚 MBA UFRJ', pilar: 'profissional' },
+                { inicio: '21:30', fim: '22:30', titulo: 'Jantar / Família', pilar: 'familia' },
+            ],
+            'ter': [
+                { inicio: '04:45', fim: '05:00', titulo: 'Despertar', pilar: 'pessoal' },
+                { inicio: '05:00', fim: '06:15', titulo: 'Academia', pilar: 'pessoal' },
+                { inicio: '06:15', fim: '06:30', titulo: 'Café da manhã', pilar: 'pessoal' },
+                { inicio: '06:30', fim: '07:00', titulo: 'Passeio Duke 🐕', pilar: 'pessoal' },
+                { inicio: '07:25', fim: '12:00', titulo: 'Trabalho (Manhã)', pilar: 'profissional' },
+                { inicio: '12:00', fim: '13:00', titulo: 'Almoço', pilar: 'pessoal' },
+                { inicio: '13:00', fim: '17:00', titulo: 'Trabalho (Tarde)', pilar: 'profissional' },
+                { inicio: '17:00', fim: '18:00', titulo: 'Volta / Chegada em casa', pilar: 'pessoal' },
+                { inicio: '18:00', fim: '20:30', titulo: 'Rotina Família / Jantar', pilar: 'familia' },
+                { inicio: '20:30', fim: '22:00', titulo: 'Tempo Livre / Casal', pilar: 'pessoal' },
+            ],
+            'qua': [
+                { inicio: '04:45', fim: '05:00', titulo: 'Despertar', pilar: 'pessoal' },
+                { inicio: '05:00', fim: '06:15', titulo: 'Academia', pilar: 'pessoal' },
+                { inicio: '06:15', fim: '06:30', titulo: 'Café da manhã', pilar: 'pessoal' },
+                { inicio: '06:30', fim: '07:00', titulo: 'Passeio Duke 🐕', pilar: 'pessoal' },
+                { inicio: '07:25', fim: '12:00', titulo: 'Trabalho (Manhã)', pilar: 'profissional' },
+                { inicio: '12:00', fim: '13:00', titulo: 'Almoço', pilar: 'pessoal' },
+                { inicio: '13:00', fim: '17:00', titulo: 'Trabalho (Tarde)', pilar: 'profissional' },
+                { inicio: '17:00', fim: '18:00', titulo: 'Volta / Chegada em casa', pilar: 'pessoal' },
+                { inicio: '18:00', fim: '18:30', titulo: 'Rotina Família', pilar: 'familia' },
+                { inicio: '18:30', fim: '21:30', titulo: '📚 MBA UFRJ', pilar: 'profissional' },
+                { inicio: '21:30', fim: '22:30', titulo: 'Jantar / Família', pilar: 'familia' },
+            ],
+            'qui': [
+                { inicio: '04:45', fim: '05:00', titulo: 'Despertar', pilar: 'pessoal' },
+                { inicio: '05:00', fim: '06:15', titulo: 'Academia', pilar: 'pessoal' },
+                { inicio: '06:15', fim: '06:30', titulo: 'Café da manhã', pilar: 'pessoal' },
+                { inicio: '06:30', fim: '07:00', titulo: 'Passeio Duke 🐕', pilar: 'pessoal' },
+                { inicio: '07:25', fim: '12:00', titulo: 'Trabalho (Manhã)', pilar: 'profissional' },
+                { inicio: '12:00', fim: '13:00', titulo: 'Almoço', pilar: 'pessoal' },
+                { inicio: '13:00', fim: '17:00', titulo: 'Trabalho (Tarde)', pilar: 'profissional' },
+                { inicio: '17:00', fim: '18:00', titulo: 'Volta / Chegada em casa', pilar: 'pessoal' },
+                { inicio: '18:00', fim: '20:30', titulo: 'Rotina Família / Jantar', pilar: 'familia' },
+                { inicio: '20:30', fim: '22:00', titulo: 'Tempo Livre / Casal', pilar: 'pessoal' },
+            ],
+            'sex': [
+                { inicio: '04:45', fim: '05:00', titulo: 'Despertar', pilar: 'pessoal' },
+                { inicio: '05:00', fim: '06:15', titulo: 'Academia', pilar: 'pessoal' },
+                { inicio: '06:15', fim: '06:30', titulo: 'Café da manhã', pilar: 'pessoal' },
+                { inicio: '06:30', fim: '07:00', titulo: 'Passeio Duke 🐕', pilar: 'pessoal' },
+                { inicio: '07:25', fim: '12:00', titulo: 'Trabalho (Manhã)', pilar: 'profissional' },
+                { inicio: '12:00', fim: '13:00', titulo: 'Almoço', pilar: 'pessoal' },
+                { inicio: '13:00', fim: '17:00', titulo: 'Trabalho (Tarde)', pilar: 'profissional' },
+                { inicio: '17:00', fim: '18:00', titulo: 'Volta / Chegada em casa', pilar: 'pessoal' },
+                { inicio: '18:00', fim: '22:00', titulo: 'Noite Livre / Família', pilar: 'familia' },
+            ],
+            'sab': [
+                { inicio: '06:00', fim: '07:00', titulo: 'Despertar tranquilo', pilar: 'pessoal' },
+                { inicio: '07:00', fim: '08:00', titulo: 'Academia (opcional)', pilar: 'pessoal' },
+                { inicio: '08:00', fim: '09:30', titulo: 'Café com família', pilar: 'familia' },
+                { inicio: '09:30', fim: '12:00', titulo: 'Livre / Lazer', pilar: 'familia' },
+                { inicio: '12:00', fim: '13:00', titulo: 'Almoço', pilar: 'familia' },
+                { inicio: '13:00', fim: '18:00', titulo: 'Tarde Livre / Família', pilar: 'familia' },
+                { inicio: '18:00', fim: '22:00', titulo: 'Noite Livre', pilar: 'pessoal' },
+            ],
+            'dom': [
+                { inicio: '07:00', fim: '08:00', titulo: 'Despertar tranquilo', pilar: 'pessoal' },
+                { inicio: '08:00', fim: '09:30', titulo: 'Café com família', pilar: 'familia' },
+                { inicio: '09:30', fim: '12:00', titulo: 'Livre / Família', pilar: 'familia' },
+                { inicio: '12:00', fim: '13:00', titulo: 'Almoço', pilar: 'familia' },
+                { inicio: '13:00', fim: '17:00', titulo: 'Tarde Livre / Família', pilar: 'familia' },
+                { inicio: '17:00', fim: '18:00', titulo: 'Planejamento da Semana', pilar: 'profissional' },
+                { inicio: '18:00', fim: '22:00', titulo: 'Noite Livre', pilar: 'pessoal' },
+            ]
+        };
+
+        const DIAS_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+        const NOMES_DIAS = { 'dom': 'Dom', 'seg': 'Seg', 'ter': 'Ter', 'qua': 'Qua', 'qui': 'Qui', 'sex': 'Sex', 'sab': 'Sáb' };
+        const NOMES_DIAS_LONGO = { 'dom': 'Domingo', 'seg': 'Segunda', 'ter': 'Terça', 'qua': 'Quarta', 'qui': 'Quinta', 'sex': 'Sexta', 'sab': 'Sábado' };
+
+        // ========== ESTADO ==========
+        const STORAGE_KEY = 'gcp_v3_data';
+
+        function defaultData() {
+            return {
+                rotina: JSON.parse(JSON.stringify(ROTINA_PADRAO)),
+                extras: {},
+                concluidos: {},
+                balde: [],
+                checkins: [],
+                tema: 'dark',
+            };
+        }
+
+        let data = loadData();
+        let viewAtual = 'diario';
+        let diaSelecionado = getDateKey(new Date());
+        let diaSemanaSelecionado = getDiaSemana(new Date());
+        let offsetSemana = 0;
+
+        function loadData() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try {
+                    const d = JSON.parse(raw);
+                    for (const dia of DIAS_SEMANA) {
+                        if (!d.rotina[dia]) d.rotina[dia] = JSON.parse(JSON.stringify(ROTINA_PADRAO[dia]));
+                    }
+                    if (!d.extras) d.extras = {};
+                    if (!d.concluidos) d.concluidos = {};
+                    if (!d.balde) d.balde = [];
+                    if (!d.checkins) d.checkins = [];
+                    if (!d.tema) d.tema = 'dark';
+                    return d;
+                } catch (e) { return defaultData(); }
+            }
+            return defaultData();
+        }
+
+        function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+        function getDateKey(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function getDiaSemana(date) { return DIAS_SEMANA[date.getDay()]; }
+
+        function dateKeyToDate(key) {
+            const [y, m, d] = key.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        }
+
+        // ========== TEMA ==========
+        function toggleTheme() {
+            data.tema = data.tema === 'dark' ? 'light' : 'dark';
+            aplicarTema();
+            saveData();
+        }
+
+        function aplicarTema() {
+            if (data.tema === 'light') {
+                document.body.classList.add('light-mode');
+                document.getElementById('themeBtn').textContent = '☀️';
+                document.querySelector('meta[name="theme-color"]').setAttribute('content', '#F5F5F5');
+            } else {
+                document.body.classList.remove('light-mode');
+                document.getElementById('themeBtn').textContent = '🌙';
+                document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0F0F0F');
+            }
+        }
+
+        // ========== TOAST ==========
+        function mostrarToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        // ========== FRASE DO DIA ==========
+        function atualizarFrase() {
+            const diaDoAno = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+            document.getElementById('fraseDia').textContent = FRASES[diaDoAno % FRASES.length];
+        }
+
+        // ========== STREAK ==========
+        function calcularStreak() {
+            let streak = 0;
+            const hoje = new Date();
+            for (let i = 0; i < 365; i++) {
+                const d = new Date(hoje);
+                d.setDate(hoje.getDate() - i - 1);
+                const key = getDateKey(d);
+                const ds = getDiaSemana(d);
+                const rotina = data.rotina[ds] || [];
+                const extras = data.extras[key] || [];
+                const concluidos = data.concluidos[key] || {};
+                const total = rotina.length + extras.length;
+                if (total === 0) break;
+                let feitos = 0;
+                rotina.forEach((_, idx) => { if (concluidos[`fixo-${idx}`]) feitos++; });
+                extras.forEach((_, idx) => { if (concluidos[`extra-${idx}`]) feitos++; });
+                const pct = Math.round((feitos / total) * 100);
+                if (pct >= 80) streak++;
+                else break;
+            }
+            return streak;
+        }
+
+        function atualizarStreak() {
+            const streak = calcularStreak();
+            document.getElementById('streakBadge').textContent = '🔥 ' + streak;
+        }
+
+        // ========== BANNER PRÓXIMO BLOCO ==========
+        function atualizarBannerProximo() {
+            const { todos } = getBlocosDoDia();
+            const agora = new Date();
+            const agoraMinutos = agora.getHours() * 60 + agora.getMinutes();
+            const pendentes = todos.filter(b => !b.done);
+            let proximo = null;
+            let menorDiff = Infinity;
+            pendentes.forEach(b => {
+                const [h, m] = b.inicio.split(':').map(Number);
+                const inicioMin = h * 60 + m;
+                const diff = inicioMin - agoraMinutos;
+                if (diff > 0 && diff < menorDiff && diff <= 60) {
+                    menorDiff = diff;
+                    proximo = b;
+                }
+            });
+            const banner = document.getElementById('bannerProximo');
+            if (proximo && menorDiff <= 15) {
+                banner.classList.add('show');
+                document.getElementById('bannerTempo').textContent = menorDiff + 'min';
+                document.getElementById('bannerTitulo').textContent = proximo.titulo;
+            } else {
+                banner.classList.remove('show');
+            }
+        }
+
+        // setInterval para banner e streak
+        setInterval(() => {
+            atualizarBannerProximo();
+            atualizarStreak();
+        }, 60000);
+
+        // ========== INIT ==========
+        function init() {
+            aplicarTema();
+            document.getElementById('currentDate').textContent =
+                new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+            const npsDiv = document.getElementById('npsButtons');
+            for (let i = 0; i <= 10; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'nps-btn';
+                btn.textContent = i;
+                btn.onclick = () => selecionarNPS(i);
+                npsDiv.appendChild(btn);
+            }
+
+            atualizarFrase();
+            construirDaySelector();
+            selecionarDia(getDateKey(new Date()));
+            renderizarTudo();
+            atualizarBannerProximo();
+            atualizarStreak();
+
+            // PWA: registrar service worker
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    self.addEventListener('install', e => self.skipWaiting());
+                    self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+                    self.addEventListener('fetch', e => {
+                        e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+                            const clone = res.clone();
+                            caches.open('gcp-v1').then(c => c.put(e.request, clone));
+                            return res;
+                        })));
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+            }
+        }
+
+        function construirDaySelector() {
+            const container = document.getElementById('daySelector');
+            const hoje = new Date();
+            let html = '';
+            for (let i = -3; i <= 7; i++) {
+                const d = new Date(hoje);
+                d.setDate(hoje.getDate() + i);
+                const key = getDateKey(d);
+                const ds = getDiaSemana(d);
+                const isHoje = i === 0;
+                const isSelected = key === diaSelecionado;
+                let classes = 'day-chip';
+                if (isHoje) classes += ' hoje';
+                if (isSelected) classes += ' active';
+                const label = isHoje ? 'Hoje' : `${NOMES_DIAS[ds]} ${d.getDate()}/${d.getMonth() + 1}`;
+                html += `<button class="${classes}" data-key="${key}" data-ds="${ds}" onclick="selecionarDia('${key}','${ds}')">${label}</button>`;
+            }
+            container.innerHTML = html;
+            setTimeout(() => {
+                const active = container.querySelector('.day-chip.active');
+                if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }, 100);
+        }
+
+        function selecionarDia(dateKey, diaSemana) {
+            diaSelecionado = dateKey;
+            diaSemanaSelecionado = diaSemana || getDiaSemana(dateKeyToDate(dateKey));
+            construirDaySelector();
+            document.getElementById('daySelector').querySelector(`[data-key="${dateKey}"]`)?.classList.add('active');
+            renderizarTudo();
+        }
+
+        function switchView(view) {
+            viewAtual = view;
+            document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.main-tab[data-view="${view}"]`).classList.add('active');
+            document.getElementById('viewDiario').classList.toggle('hidden', view !== 'diario');
+            document.getElementById('viewSemanal').classList.toggle('hidden', view !== 'semanal');
+            document.getElementById('viewHistorico').classList.toggle('hidden', view !== 'historico');
+            if (view === 'semanal') { offsetSemana = 0;
+                renderizarSemana(); }
+            if (view === 'diario') renderizarTudo();
+            if (view === 'historico') renderizarHistorico();
+        }
+
+        // ========== RENDER DIÁRIO ==========
+        function renderizarTudo() {
+            if (viewAtual !== 'diario') return;
+            renderizarBlocos();
+            renderizarBalde();
+            carregarCheckin();
+            atualizarPills();
+            atualizarMetricas();
+            atualizarBannerProximo();
+            atualizarStreak();
+            saveData();
+        }
+
+        function getBlocosDoDia() {
+            const rotina = data.rotina[diaSemanaSelecionado] || [];
+            const extras = data.extras[diaSelecionado] || [];
+            const concluidos = data.concluidos[diaSelecionado] || {};
+            const fixos = rotina.map((b, i) => ({ ...b, id: `fixo-${i}`, fixo: true, done: !!concluidos[`fixo-${i}`] }));
+            const extrasComStatus = extras.map((b, i) => ({ ...b, id: `extra-${i}`, fixo: false, done: !!concluidos[`extra-${i}`] }));
+            return { fixos, extras: extrasComStatus, todos: [...fixos, ...extrasComStatus] };
+        }
+
+        function renderizarBlocos() {
+            const { fixos, extras } = getBlocosDoDia();
+            const fixosContainer = document.getElementById('blockListFixos');
+            if (fixos.length === 0) {
+                fixosContainer.innerHTML = '<div style="text-align:center;color:var(--muted);padding:12px;font-size:12px;">Nenhum bloco fixo.</div>';
+            } else {
+                fixosContainer.innerHTML = fixos.map((b, i) => renderBlocoHTML(b, 'fixo', i)).join('');
+            }
+            const extrasContainer = document.getElementById('blockListExtras');
+            if (extras.length === 0) {
+                extrasContainer.innerHTML = '<div style="text-align:center;color:var(--muted);padding:12px;font-size:12px;">Nenhum bloco extra.</div>';
+            } else {
+                extrasContainer.innerHTML = extras.map((b, i) => renderBlocoHTML(b, 'extra', i)).join('');
+            }
+        }
+
+        function renderBlocoHTML(b, tipo, idx) {
+            const pilarLabel = { pessoal: '🧑 Pessoal', familia: '👨‍👩‍👧‍👦 Família', profissional: '💼 Profissional' }[b.pilar];
+            return `
+                <div class="block ${b.pilar} ${b.fixo ? 'fixo' : ''} ${b.done ? 'done' : ''}"
+                     onclick="toggleBloco('${tipo}', '${b.id}')"
+                     ondblclick="editarBloco('${tipo}', '${b.id}')"
+                     title="Toque: marcar/desmarcar | Duplo toque: editar">
+                    <div class="checkbox">${b.done ? '✓' : ''}</div>
+                    <div class="block-time">${b.inicio}<br>${b.fim}</div>
+                    <div class="block-info">
+                        <div class="block-title">${escapeHTML(b.titulo)}${b.fixo ? '<span class="tag-fixo">FIXO</span>' : ''}</div>
+                        <span class="block-pilar-tag">${pilarLabel}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleBloco(tipo, id) {
+            if (!data.concluidos[diaSelecionado]) data.concluidos[diaSelecionado] = {};
+            data.concluidos[diaSelecionado][id] = !data.concluidos[diaSelecionado][id];
+            renderizarTudo();
+        }
+
+        // ========== EDITAR BLOCO (DUPLO TOQUE) ==========
+        function editarBloco(tipo, id) {
+            const idx = parseInt(id.split('-')[1]);
+            let bloco;
+            if (tipo === 'fixo') {
+                bloco = (data.rotina[diaSemanaSelecionado] || [])[idx];
+                if (!bloco) return;
+                // Não editamos fixo pelo duplo toque, abrimos a rotina
+                abrirModalRotina();
+                return;
+            } else {
+                bloco = (data.extras[diaSelecionado] || [])[idx];
+                if (!bloco) return;
+                document.getElementById('modalBlocoTitulo').textContent = '✏️ Editar Bloco';
+                document.getElementById('blocoTitulo').value = bloco.titulo;
+                document.getElementById('blocoInicio').value = bloco.inicio;
+                document.getElementById('blocoFim').value = bloco.fim;
+                document.getElementById('blocoPilar').value = bloco.pilar;
+                document.getElementById('blocoEditIndex').value = idx;
+                document.getElementById('modalBloco').classList.add('show');
+                document.getElementById('blocoTitulo').focus();
+            }
+        }
+
+        function addOuEditarBloco() {
+            const titulo = document.getElementById('blocoTitulo').value.trim();
+            const inicio = document.getElementById('blocoInicio').value;
+            const fim = document.getElementById('blocoFim').value;
+            const pilar = document.getElementById('blocoPilar').value;
+            const editIdx = parseInt(document.getElementById('blocoEditIndex').value);
+
+            if (!titulo) { alert('Digite um título.'); return; }
+            if (!data.extras[diaSelecionado]) data.extras[diaSelecionado] = [];
+
+            if (editIdx >= 0 && data.extras[diaSelecionado][editIdx]) {
+                // Editando
+                data.extras[diaSelecionado][editIdx] = { ...data.extras[diaSelecionado][editIdx], titulo, inicio, fim, pilar };
+            } else {
+                // Novo
+                data.extras[diaSelecionado].push({ titulo, inicio, fim, pilar, criadoEm: new Date().toISOString() });
+            }
+
+            fecharModalBloco();
+            renderizarTudo();
+        }
+
+        function abrirModalBloco(preTitulo = '') {
+            document.getElementById('modalBlocoTitulo').textContent = '➕ Novo Bloco';
+            document.getElementById('blocoTitulo').value = preTitulo;
+            document.getElementById('blocoInicio').value = '08:00';
+            document.getElementById('blocoFim').value = '09:00';
+            document.getElementById('blocoPilar').value = 'profissional';
+            document.getElementById('blocoEditIndex').value = '-1';
+            document.getElementById('modalBloco').classList.add('show');
+            document.getElementById('blocoTitulo').focus();
+        }
+
+        function fecharModalBloco() {
+            document.getElementById('modalBloco').classList.remove('show');
+            document.getElementById('blocoEditIndex').value = '-1';
+        }
+
+        // ========== ROTINA ==========
+        function abrirModalRotina() {
+            document.getElementById('modalRotinaDia').textContent = NOMES_DIAS_LONGO[diaSemanaSelecionado];
+            renderizarModalRotina();
+            document.getElementById('modalRotina').classList.add('show');
+        }
+
+        function fecharModalRotina() {
+            document.getElementById('modalRotina').classList.remove('show');
+            renderizarTudo();
+        }
+
+        function renderizarModalRotina() {
+            const rotina = data.rotina[diaSemanaSelecionado] || [];
+            const container = document.getElementById('modalRotinaList');
+            if (rotina.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:10px;">Nenhum bloco.</div>';
+                return;
+            }
+            container.innerHTML = rotina.map((b, i) => `
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
+                    <span style="color:var(--muted);min-width:55px;font-size:10px;">${b.inicio}-${b.fim}</span>
+                    <span style="flex:1;">${escapeHTML(b.titulo)}</span>
+                    <span style="font-size:10px;color:var(--${b.pilar === 'pessoal' ? 'pessoal' : b.pilar === 'familia' ? 'familia' : 'profissional'});">${{pessoal:'🧑',familia:'👨‍👩‍👧‍👦',profissional:'💼'}[b.pilar]}</span>
+                    <span style="cursor:pointer;color:var(--danger);font-size:14px;padding:2px;" onclick="removerRotinaItem(${i})">✕</span>
+                </div>
+            `).join('');
+        }
+
+        function addRotinaItem() {
+            const titulo = document.getElementById('rotinaTitulo').value.trim();
+            const inicio = document.getElementById('rotinaInicio').value;
+            const fim = document.getElementById('rotinaFim').value;
+            const pilar = document.getElementById('rotinaPilar').value;
+            if (!titulo) { alert('Digite um título.'); return; }
+            data.rotina[diaSemanaSelecionado].push({ titulo, inicio, fim, pilar });
+            data.rotina[diaSemanaSelecionado].sort((a, b) => a.inicio.localeCompare(b.inicio));
+            document.getElementById('rotinaTitulo').value = '';
+            renderizarModalRotina();
+            saveData();
+        }
+
+        function removerRotinaItem(idx) {
+            data.rotina[diaSemanaSelecionado].splice(idx, 1);
+            renderizarModalRotina();
+            saveData();
+        }
+
+        function resetarRotinaDia() {
+            if (confirm(`Resetar rotina de ${NOMES_DIAS_LONGO[diaSemanaSelecionado]}?`)) {
+                data.rotina[diaSemanaSelecionado] = JSON.parse(JSON.stringify(ROTINA_PADRAO[diaSemanaSelecionado]));
+                renderizarModalRotina();
+                saveData();
+            }
+        }
+
+        // ========== BALDE (com clique → bloco) ==========
+        function addBalde() {
+            const input = document.getElementById('baldeInput');
+            const valor = input.value.trim();
+            if (!valor) return;
+            data.balde.push(valor);
+            input.value = '';
+            renderizarBalde();
+            saveData();
+        }
+
+        function removerBalde(idx) {
+            data.balde.splice(idx, 1);
+            renderizarBalde();
+            saveData();
+        }
+
+        function limparBalde() {
+            if (data.balde.length === 0) return;
+            if (confirm('Limpar todos os itens do Balde?')) {
+                data.balde = [];
+                renderizarBalde();
+                saveData();
+            }
+        }
+
+        /** Clica no item do balde → abre modal de bloco com título pré-preenchido */
+        function baldeParaBloco(idx) {
+            const texto = data.balde[idx];
+            abrirModalBloco(texto);
+        }
+
+        function renderizarBalde() {
+            const container = document.getElementById('baldeItems');
+            document.getElementById('baldeCount').textContent = data.balde.length;
+            if (data.balde.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:8px;font-size:11px;">Balde vazio.</div>';
+                return;
+            }
+            container.innerHTML = data.balde.map((item, i) => `
+                <div class="balde-item" onclick="baldeParaBloco(${i})" title="Toque para transformar em bloco agendado">
+                    <span class="balde-item-text">${escapeHTML(item)}</span>
+                    <span class="balde-item-del" onclick="event.stopPropagation();removerBalde(${i})">✕</span>
+                </div>
+            `).join('');
+        }
+
+        // ========== CHECK-IN ==========
+        function carregarCheckin() {
+            const checkin = (data.checkins || []).find(c => c.data === diaSelecionado);
+            document.getElementById('checkinImportou').value = checkin?.importou || '';
+            document.getElementById('checkinFicou').value = checkin?.ficou || '';
+            const npsValue = checkin?.nps ?? null;
+            document.getElementById('npsValue').value = npsValue !== null ? npsValue : '';
+            document.querySelectorAll('.nps-btn').forEach((btn, i) => {
+                btn.classList.toggle('selected', i === npsValue);
+            });
+        }
+
+        function selecionarNPS(valor) {
+            document.getElementById('npsValue').value = valor;
+            document.querySelectorAll('.nps-btn').forEach((btn, i) => {
+                btn.classList.toggle('selected', i === valor);
+            });
+        }
+
+        function salvarCheckin() {
+            const importou = document.getElementById('checkinImportou').value.trim();
+            const ficou = document.getElementById('checkinFicou').value.trim();
+            const npsVal = document.getElementById('npsValue').value;
+            const nps = npsVal !== '' ? parseInt(npsVal) : null;
+            data.checkins = (data.checkins || []).filter(c => c.data !== diaSelecionado);
+            data.checkins.push({ data: diaSelecionado, importou, ficou, nps, timestamp: new Date().toISOString() });
+            saveData();
+            atualizarMetricas();
+            atualizarStreak();
+            mostrarToast('✅ Check-in salvo!');
+        }
+
+        // ========== EXPORTAR CHECK-IN ==========
+        function exportarCheckin() {
+            const { todos } = getBlocosDoDia();
+            const feitos = todos.filter(b => b.done).length;
+            const total = todos.length;
+            const pct = total > 0 ? Math.round((feitos / total) * 100) : 0;
+            const pendentes = todos.filter(b => !b.done);
+            const pPend = pendentes.filter(b => b.pilar === 'pessoal').length;
+            const fPend = pendentes.filter(b => b.pilar === 'familia').length;
+            const prPend = pendentes.filter(b => b.pilar === 'profissional').length;
+            const checkin = (data.checkins || []).find(c => c.data === diaSelecionado) || {};
+
+            const d = dateKeyToDate(diaSelecionado);
+            const dataFmt = d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+
+            const resumo = `📊 GCP — ${dataFmt}
+✅ Concluído: ${pct}% (${feitos}/${total})
+🧑 Pessoal: ${pPend} pendentes
+👨‍👩‍👧‍👦 Família: ${fPend} pendentes
+💼 Profissional: ${prPend} pendentes
+🎯 Importou: ${checkin.importou || '—'}
+⏳ Ficou: ${checkin.ficou || '—'}
+⭐ Nota: ${checkin.nps !== null && checkin.nps !== undefined ? checkin.nps : '—'}`;
+
+            document.getElementById('resumoConteudo').textContent = resumo;
+            document.getElementById('modalResumo').classList.add('show');
+        }
+
+        function fecharModalResumo() { document.getElementById('modalResumo').classList.remove('show'); }
+
+        function copiarResumo() {
+            const texto = document.getElementById('resumoConteudo').textContent;
+            navigator.clipboard.writeText(texto).then(() => {
+                mostrarToast('📋 Copiado!');
+                fecharModalResumo();
+            }).catch(() => alert('Não foi possível copiar.'));
+        }
+
+        // ========== HISTÓRICO DE CHECK-INS ==========
+        function renderizarHistorico() {
+            const checkins = (data.checkins || []).slice().sort((a, b) => b.data.localeCompare(a.data));
+            const ultimos30 = checkins.slice(0, 30);
+
+            document.getElementById('histTotal').textContent = checkins.length;
+
+            // Média NPS
+            const comNPS = checkins.filter(c => c.nps !== null && c.nps !== undefined);
+            const media = comNPS.length > 0 ? (comNPS.reduce((s, c) => s + c.nps, 0) / comNPS.length).toFixed(1) : '—';
+            document.getElementById('histMediaNPS').textContent = media;
+
+            document.getElementById('histStreak').textContent = calcularStreak();
+
+            const lista = document.getElementById('historicoLista');
+            if (ultimos30.length === 0) {
+                lista.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">Nenhum check-in ainda.</div>';
+                return;
+            }
+
+            lista.innerHTML = ultimos30.map((c, i) => {
+                const d = dateKeyToDate(c.data);
+                const dataFmt = d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+                const npsClass = c.nps >= 8 ? 'nps-alto' : c.nps >= 5 ? 'nps-medio' : 'nps-baixo';
+                return `
+                    <div class="historico-item">
+                        <span class="nps-badge ${npsClass}">${c.nps !== null ? c.nps : '?'}</span>
+                        <strong>${dataFmt}</strong>
+                        ${c.importou ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">🎯 ${escapeHTML(c.importou)}</div>` : ''}
+                        ${c.ficou ? `<div style="font-size:10px;color:var(--muted);">⏳ ${escapeHTML(c.ficou)}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========== BACKUP/RESTORE ==========
+        function exportarDados() {
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `gcp_backup_${getDateKey(new Date())}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            mostrarToast('📤 Dados exportados!');
+        }
+
+        function importarDados(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (confirm('Substituir todos os dados atuais pelo backup? Esta ação não pode ser desfeita.')) {
+                        data = imported;
+                        // Garantir estrutura
+                        for (const dia of DIAS_SEMANA) {
+                            if (!data.rotina[dia]) data.rotina[dia] = JSON.parse(JSON.stringify(ROTINA_PADRAO[dia]));
+                        }
+                        if (!data.extras) data.extras = {};
+                        if (!data.concluidos) data.concluidos = {};
+                        if (!data.balde) data.balde = [];
+                        if (!data.checkins) data.checkins = [];
+                        if (!data.tema) data.tema = 'dark';
+                        aplicarTema();
+                        saveData();
+                        renderizarTudo();
+                        mostrarToast('📥 Dados importados!');
+                    }
+                } catch (err) {
+                    alert('Arquivo inválido.');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ========== PILLS & MÉTRICAS ==========
+        function atualizarPills() {
+            const { todos } = getBlocosDoDia();
+            const pendentes = todos.filter(b => !b.done);
+            document.getElementById('count-pessoal').textContent = pendentes.filter(b => b.pilar === 'pessoal').length;
+            document.getElementById('count-familia').textContent = pendentes.filter(b => b.pilar === 'familia').length;
+            document.getElementById('count-profissional').textContent = pendentes.filter(b => b.pilar === 'profissional').length;
+        }
+
+        function atualizarMetricas() {
+            const { todos } = getBlocosDoDia();
+            const total = todos.length;
+            const feitos = todos.filter(b => b.done).length;
+            const pct = total > 0 ? Math.round((feitos / total) * 100) : 0;
+            const pendentes = total - feitos;
+            document.getElementById('metrica-blocks').textContent = pct + '%';
+            document.getElementById('metrica-pendentes').textContent = pendentes;
+            document.getElementById('metrica-total').textContent = total;
+            const metricaPct = document.getElementById('metrica-blocks');
+            metricaPct.className = 'metrica-valor';
+            if (pct >= 80) metricaPct.classList.add('green');
+            else if (pct >= 50) metricaPct.classList.add('gold');
+            else metricaPct.classList.add('red');
+        }
+
+        // ========== ATALHOS DE TECLADO ==========
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key === 'n' || e.key === 'N') {
+                e.preventDefault();
+                abrirModalBloco();
+            }
+            if (e.key === 'b' || e.key === 'B') {
+                e.preventDefault();
+                document.getElementById('baldeInput').focus();
+            }
+        });
+
+        // ================================================================
+        //  VISÃO SEMANAL — HORIZONTAL COMPACTA
+        // ================================================================
+        const CAL_START_HOUR = 5;
+        const CAL_END_HOUR = 23;
+        const CAL_HOUR_HEIGHT = 32;
+
+        function calcularInicioSemana(offset) {
+            const hoje = new Date();
+            const diaDaSemana = hoje.getDay();
+            const inicio = new Date(hoje);
+            inicio.setDate(hoje.getDate() - diaDaSemana + offset * 7);
+            return inicio;
+        }
+
+        function fmtData(d) {
+            return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+        }
+
+        function navegarSemana(dir) {
+            offsetSemana += dir;
+            renderizarSemana();
+        }
+
+        function renderizarSemana() {
+            const inicio = calcularInicioSemana(offsetSemana);
+            const hoje = new Date();
+            const hojeKey = getDateKey(hoje);
+
+            const fim = new Date(inicio);
+            fim.setDate(inicio.getDate() + 6);
+            document.getElementById('semanaRange').textContent = `${fmtData(inicio)} — ${fmtData(fim)}`;
+
+            // Header
+            const headerEl = document.getElementById('calHeader');
+            let headerHTML = '<div class="cal-spacer"></div>';
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(inicio);
+                d.setDate(inicio.getDate() + i);
+                const ds = DIAS_SEMANA[i];
+                const ehHoje = getDateKey(d) === hojeKey;
+                headerHTML += `
+                    <div class="cal-day-header${ehHoje ? ' hoje' : ''}">
+                        <div class="cal-day-nome">${NOMES_DIAS[ds]}</div>
+                        <div class="cal-day-num">${d.getDate()}</div>
+                    </div>`;
+            }
+            headerEl.innerHTML = headerHTML;
+
+            // Body
+            const bodyEl = document.getElementById('calBody');
+            let bodyHTML = '<div class="cal-time-col">';
+            for (let h = CAL_START_HOUR; h < CAL_END_HOUR; h++) {
+                bodyHTML += `<div class="cal-time-slot" style="height:${CAL_HOUR_HEIGHT}px;">${String(h).padStart(2,'0')}:00</div>`;
+            }
+            bodyHTML += '</div>';
+
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(inicio);
+                d.setDate(inicio.getDate() + i);
+                const ehHoje = getDateKey(d) === hojeKey;
+                bodyHTML += `<div class="cal-day-col${ehHoje ? ' hoje' : ''}" data-col="${i}" id="calDayCol${i}">`;
+                for (let h = CAL_START_HOUR; h < CAL_END_HOUR; h++) {
+                    bodyHTML += `<div class="cal-hour-cell" style="height:${CAL_HOUR_HEIGHT}px;" data-hora="${h}" data-col="${i}"></div>`;
+                }
+                bodyHTML += '</div>';
+            }
+            bodyEl.innerHTML = bodyHTML;
+
+            // Eventos
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(inicio);
+                d.setDate(inicio.getDate() + i);
+                const dateKey = getDateKey(d);
+                const ds = DIAS_SEMANA[i];
+                const rotina = data.rotina[ds] || [];
+                const extras = data.extras[dateKey] || [];
+                const todos = [...rotina.map(b => ({ ...b, fixo: true })), ...extras.map(b => ({ ...b, fixo: false }))];
+                const colEl = document.getElementById('calDayCol' + i);
+                if (!colEl) continue;
+
+                todos.forEach(bloco => {
+                    const [hIni, mIni] = bloco.inicio.split(':').map(Number);
+                    const [hFim, mFim] = bloco.fim.split(':').map(Number);
+                    const startDecimal = hIni + mIni / 60;
+                    const endDecimal = hFim + mFim / 60;
+                    if (endDecimal <= CAL_START_HOUR || startDecimal >= CAL_END_HOUR) return;
+                    const top = Math.max(0, (startDecimal - CAL_START_HOUR)) * CAL_HOUR_HEIGHT;
+                    const height = Math.max(16, (Math.min(endDecimal, CAL_END_HOUR) - Math.max(startDecimal, CAL_START_HOUR)) * CAL_HOUR_HEIGHT);
+                    const el = document.createElement('div');
+                    el.className = `cal-evento ${bloco.pilar}`;
+                    el.style.top = top + 'px';
+                    el.style.height = height + 'px';
+                    el.title = `${bloco.titulo} (${bloco.inicio}–${bloco.fim})`;
+                    el.innerHTML = `<div class="evt-titulo">${escapeHTML(bloco.titulo)}</div><div class="evt-hora">${bloco.inicio}</div>`;
+                    el.onclick = (function(key, diaSem) {
+                        return function() {
+                            diaSelecionado = key;
+                            diaSemanaSelecionado = diaSem;
+                            switchView('diario');
+                        };
+                    })(dateKey, ds);
+                    colEl.appendChild(el);
+                });
+            }
+
+            // Linha do agora
+            if (offsetSemana === 0) {
+                const agora = new Date();
+                const agoraDecimal = agora.getHours() + agora.getMinutes() / 60;
+                if (agoraDecimal >= CAL_START_HOUR && agoraDecimal <= CAL_END_HOUR) {
+                    const topAgora = (agoraDecimal - CAL_START_HOUR) * CAL_HOUR_HEIGHT;
+                    const hojeColIdx = hoje.getDay();
+                    const hojeColEl = document.getElementById('calDayCol' + hojeColIdx);
+                    if (hojeColEl) {
+                        const linha = document.createElement('div');
+                        linha.className = 'cal-linha-agora';
+                        linha.style.top = topAgora + 'px';
+                        hojeColEl.appendChild(linha);
+                    }
+                }
+            }
+
+            // Footer com cores por %
+            const footerEl = document.getElementById('calFooter');
+            let footerHTML = '<div class="cal-footer-spacer"></div>';
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(inicio);
+                d.setDate(inicio.getDate() + i);
+                const dateKey = getDateKey(d);
+                const ds = DIAS_SEMANA[i];
+                const ehHoje = dateKey === hojeKey;
+                const rotina = data.rotina[ds] || [];
+                const extras = data.extras[dateKey] || [];
+                const concluidos = data.concluidos[dateKey] || {};
+                const totalDia = rotina.length + extras.length;
+                let feitosDia = 0;
+                rotina.forEach((_, idx) => { if (concluidos[`fixo-${idx}`]) feitosDia++; });
+                extras.forEach((_, idx) => { if (concluidos[`extra-${idx}`]) feitosDia++; });
+                const pctDia = totalDia > 0 ? Math.round((feitosDia / totalDia) * 100) : 0;
+                let bordaClass = '';
+                if (totalDia > 0) {
+                    if (pctDia >= 80) bordaClass = 'borda-verde';
+                    else if (pctDia >= 50) bordaClass = 'borda-amarela';
+                    else bordaClass = 'borda-vermelha';
+                }
+                footerHTML += `
+                    <div class="cal-footer-stat${ehHoje ? ' hoje' : ''} ${bordaClass}">
+                        <span class="pct">${pctDia}%</span>
+                        <span style="font-size:7px;">${feitosDia}/${totalDia}</span>
+                    </div>`;
+            }
+            footerEl.innerHTML = footerHTML;
+        }
+
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ========== INICIALIZAÇÃO ==========
+        window.onload = init;
+    </script>
+</body>
+</html>
