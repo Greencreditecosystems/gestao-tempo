@@ -1,3 +1,37 @@
+<div id="agenda-container"></div>
+async function carregarAgenda() {
+  const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbxwvrq2vu2e3cnw-1gk63qbtrDkyj1RTFI6DYxXHoRXXh8-6T696NrBddqLqT9Wq2iw/exec';
+
+  try {
+    const response = await fetch(URL_APPS_SCRIPT);
+    const eventos = await response.json();
+    const container = document.getElementById('agenda-container');
+    container.innerHTML = '';
+
+    if (eventos.length === 0) {
+      container.innerHTML = '<p>📭 Nenhum evento nos próximos 7 dias.</p>';
+      return;
+    }
+
+    eventos.forEach(evento => {
+      const inicio = new Date(evento.start);
+      const fim = new Date(evento.end);
+      const card = document.createElement('div');
+      card.className = 'evento-card';
+      card.innerHTML = `
+        <h4>${evento.title}</h4>
+        <p>📅 ${inicio.toLocaleDateString('pt-BR')}  ${inicio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+        ${evento.location ? `<p>📍 ${evento.location}</p>` : ''}
+      `;
+      container.appendChild(card);
+    });
+  } catch (err) {
+    console.error('Erro ao carregar os eventos:', err);
+    document.getElementById('agenda-container').innerHTML = '<p>❌ Erro ao carregar agenda. Verifique o console.</p>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', carregarAgenda);
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
